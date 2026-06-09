@@ -72,7 +72,7 @@ def get_video_info(url: str):
         # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863',
+        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863/",
         'sleep_interval' : 3,
         'concurrent_fragment_downloads': 1
     }
@@ -108,7 +108,7 @@ def list_available_formats(url: str):
         # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863',
+        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863/",
         'sleep_interval' : 3,
         'concurrent_fragment_downloads': 1
     }
@@ -185,7 +185,7 @@ def list_available_subtitles(url: str):
         # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863',
+        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863/",
         'sleep_interval' : 3,
         'concurrent_fragment_downloads': 1
     }
@@ -266,7 +266,7 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863',
+        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863/",
         'sleep_interval' : 3,
         'concurrent_fragment_downloads': 1
     }
