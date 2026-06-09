@@ -69,8 +69,8 @@ def get_video_info(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        # 'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
-        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
+        # 'extractor_args': {'youtube': {'player_client': ['android']}},
         # 'proxy': 'sock5://127.0.0.1:40000'
     }
     
@@ -102,8 +102,8 @@ def list_available_formats(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        # 'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
-        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
+        # 'extractor_args': {'youtube': {'player_client': ['android']}},
         # 'proxy': 'sock5://127.0.0.1:40000'
     }
     
@@ -176,8 +176,8 @@ def list_available_subtitles(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        # 'cookiefile': 'youtube_cookies.txt'
-        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'cookiefile': 'youtube_cookies.txt'
+        # 'extractor_args': {'youtube': {'player_client': ['android']}},
         # 'proxy': 'sock5://127.0.0.1:40000'
     }
     
@@ -254,8 +254,8 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
         'retries': 3,
         'fragment_retries': 3,
-        # 'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
-        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
+        # 'extractor_args': {'youtube': {'player_client': ['android']}},
         # 'proxy': 'sock5://127.0.0.1:40000'
     }
     
