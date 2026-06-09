@@ -27,7 +27,7 @@ function App() {
     setLoading(true); setError('');
     try {
       const res = await fetch(`${API_BASE}/api/info`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify({ url })
       });
       const data = await res.json();
@@ -48,12 +48,12 @@ function App() {
     let subs = [];
 
     try {
-      const fmtRes = await fetch(`${API_BASE}/api/list-formats`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl }) });
+      const fmtRes = await fetch(`${API_BASE}/api/list-formats`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ url: videoUrl }) });
       if (fmtRes.ok) { const fmtData = await fmtRes.json(); formats = fmtData.formats || []; }
     } catch (err) { console.error("Format fetch error:", err); }
 
     try {
-      const subRes = await fetch(`${API_BASE}/api/list-subs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl }) });
+      const subRes = await fetch(`${API_BASE}/api/list-subs`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ url: videoUrl }) });
       if (subRes.ok) { const subData = await subRes.json(); subs = subData.subtitles || []; }
     } catch (err) { console.error("Sub fetch error:", err); }
 
@@ -93,7 +93,7 @@ function App() {
       };
 
       fetch(`${API_BASE}/api/start-download`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify(requestBody)
       })
       .then(res => res.json())
@@ -103,7 +103,7 @@ function App() {
 
         const interval = setInterval(async () => {
           try {
-            const progRes = await fetch(`${API_BASE}/api/progress/${task_id}`);
+            const progRes = await fetch(`${API_BASE}/api/progress/${task_id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
             const progData = await progRes.json();
             
             setDownloadProgress(prev => ({ ...prev, [videoId]: progData }));
