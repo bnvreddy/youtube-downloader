@@ -70,7 +70,8 @@ def get_video_info(url: str):
         'skip_download': True,
         'remote_components': ['ejs:github'],
         # 'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
-        'extractor_args': {'youtube': {'player_client': ['android']}}
+        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'proxy': 'sock5://127.0.0.1:40000'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -102,7 +103,8 @@ def list_available_formats(url: str):
         'skip_download': True,
         'remote_components': ['ejs:github'],
         # 'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
-        'extractor_args': {'youtube': {'player_client': ['android']}}
+        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'proxy': 'sock5://127.0.0.1:40000'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -175,7 +177,8 @@ def list_available_subtitles(url: str):
         'skip_download': True,
         'remote_components': ['ejs:github'],
         # 'cookiefile': 'youtube_cookies.txt'
-        'extractor_args': {'youtube': {'player_client': ['android']}}
+        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'proxy': 'sock5://127.0.0.1:40000'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -252,7 +255,8 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         'retries': 3,
         'fragment_retries': 3,
         # 'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
-        'extractor_args': {'youtube': {'player_client': ['android']}}
+        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'proxy': 'sock5://127.0.0.1:40000'
     }
     
     if merge_format: 
