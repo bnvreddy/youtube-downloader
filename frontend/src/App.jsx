@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
+const API_BASE = import.meta.env.VITE_API_BASE || "http://192.168.10.4:8000";
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 function App() {
   const [url, setUrl] = useState('');
   const [videos, setVideos] = useState([]);
@@ -138,7 +138,7 @@ function App() {
     });
   };
 
-  const runPlaylistDownload = async () => {
+    const runPlaylistDownload = async () => {
     const videosToDownload = videos.filter(v => selectedVideos.has(v.id));
     if (videosToDownload.length === 0) return alert("No videos selected!");
     setIsDownloadingPlaylist(true);
@@ -146,12 +146,23 @@ function App() {
     for (let i = 0; i < videosToDownload.length; i++) {
       const video = videosToDownload[i];
       setPlaylistQueue({ current: i + 1, total: videosToDownload.length, title: video.title });
-      try { await downloadAndAwaitVideo(video.url, video.id); } 
-      catch (err) { 
+      try { 
+        await downloadAndAwaitVideo(video.url, video.id); 
+      } catch (err) { 
         if (err === "cancelled") { break; }
         console.error(`Failed to download ${video.title}:`, err); 
       }
+
+      if (i < videosToDownload.length - 1) {
+        setPlaylistQueue(prev => ({ 
+          ...prev, 
+          title: "⏳ Waiting 5s to prevent rate-limit..." 
+        }));
+        await sleep(5000); // 5000 milliseconds = 5 seconds
+      }
+
     }
+    
     setIsDownloadingPlaylist(false);
     setPlaylistQueue({ current: 0, total: 0, title: '' });
   };
