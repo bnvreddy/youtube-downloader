@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from app.services.extractor import get_video_info, download_video_to_temp, list_available_subtitles, list_available_formats, download_tasks
+from app.services.extractor import DownloadCancelled, get_video_info, download_video_to_temp, list_available_subtitles, list_available_formats, download_tasks
 from pydantic import BaseModel
 
 

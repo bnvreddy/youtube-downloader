@@ -69,9 +69,10 @@ def get_video_info(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
+        # 'geo_bypass_country': 'US',
+        'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        # 'proxy': 'sock5://127.0.0.1:40000'
+        # 'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -102,9 +103,10 @@ def list_available_formats(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
+        # 'geo_bypass_country': 'US',
+        'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        # 'proxy': 'sock5://127.0.0.1:40000'
+        # 'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -176,9 +178,10 @@ def list_available_subtitles(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        'cookiefile': 'youtube_cookies.txt'
+        # 'geo_bypass_country': 'US',
+        'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        # 'proxy': 'sock5://127.0.0.1:40000'
+        # 'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -254,9 +257,10 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
         'retries': 3,
         'fragment_retries': 3,
-        'cookiefile': 'youtube_cookies.txt'  # Optional: Use cookies for age-restricted/private videos
+        # 'geo_bypass_country': 'US',
+        'cookiefile': 'youtube_cookies.txt',
         # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        # 'proxy': 'sock5://127.0.0.1:40000'
+        # 'proxy': 'http://bywzztyc:rkafyc1ko1ds@38.154.203.95:5863'
     }
     
     if merge_format: 
