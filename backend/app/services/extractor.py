@@ -69,12 +69,8 @@ def get_video_info(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
-        # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.58.9.4:6077/",
         'sleep_interval' : 3,
-        'concurrent_fragment_downloads': 1
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -105,12 +101,8 @@ def list_available_formats(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
-        # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.58.9.4:6077/",
         'sleep_interval' : 3,
-        'concurrent_fragment_downloads': 1
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -182,12 +174,8 @@ def list_available_subtitles(url: str):
         'no_warnings': True,
         'skip_download': True,
         'remote_components': ['ejs:github'],
-        # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
-        # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.58.9.4:6077/",
         'sleep_interval' : 3,
-        'concurrent_fragment_downloads': 1
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -263,12 +251,8 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
         'retries': 3,
         'fragment_retries': 3,
-        # 'geo_bypass_country': 'US',
         'cookiefile': 'youtube_cookies.txt',
-        # 'extractor_args': {'youtube': {'player_client': ['android']}},
-        'proxy': "http://bywzztyc:rkafyc1ko1ds@38.58.9.4:6077/",
         'sleep_interval' : 3,
-        'concurrent_fragment_downloads': 1
     }
     
     if merge_format: 
