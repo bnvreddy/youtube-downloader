@@ -1,0 +1,21 @@
+/backend/venv
+/backend/app/__pycache__
+/backend/app/services/__pycache__
+/backend/app/hello.py
+/backend/app/services/extractor2.py
+
+# Ignore all .log files
+*.log
+
+# Ignore all .tmp files
+*.tmp
+# Ignore all .cache files
+*.cache
+
+/frontend/node_modules
+/frontend/dist
+/frontend/build
+/frontend/.env
+
+Dockerfile
+youtube_cookies.txt
