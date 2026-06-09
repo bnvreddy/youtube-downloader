@@ -16,5 +16,3 @@
 /frontend/dist
 /frontend/build
 /frontend/.env
-
-Dockerfile
