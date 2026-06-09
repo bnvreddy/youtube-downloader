@@ -26,7 +26,7 @@ function App() {
     if (!url) return;
     setLoading(true); setError('');
     try {
-      const res = await fetch(`${API_BASE}api/info`, {
+      const res = await fetch(`${API_BASE}/api/info`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
@@ -48,12 +48,12 @@ function App() {
     let subs = [];
 
     try {
-      const fmtRes = await fetch(`${API_BASE}api/list-formats`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl }) });
+      const fmtRes = await fetch(`${API_BASE}/api/list-formats`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl }) });
       if (fmtRes.ok) { const fmtData = await fmtRes.json(); formats = fmtData.formats || []; }
     } catch (err) { console.error("Format fetch error:", err); }
 
     try {
-      const subRes = await fetch(`${API_BASE}api/list-subs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl }) });
+      const subRes = await fetch(`${API_BASE}/api/list-subs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl }) });
       if (subRes.ok) { const subData = await subRes.json(); subs = subData.subtitles || []; }
     } catch (err) { console.error("Sub fetch error:", err); }
 
@@ -79,7 +79,7 @@ function App() {
   const cancelDownload = async (videoId) => {
     const task_id = activeTaskIds[videoId];
     if (task_id) {
-      try { await fetch(`${API_BASE}api/cancel-download/${task_id}`, { method: 'POST' }); } 
+      try { await fetch(`${API_BASE}/api/cancel-download/${task_id}`, { method: 'POST' }); } 
       catch (err) { console.error("Failed to send cancel request", err); }
     }
   };
@@ -92,7 +92,7 @@ function App() {
         max_resolution: formatData.max_resolution, audio_only: formatData.audio_only
       };
 
-      fetch(`${API_BASE}api/start-download`, {
+      fetch(`${API_BASE}/api/start-download`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       })
@@ -103,7 +103,7 @@ function App() {
 
         const interval = setInterval(async () => {
           try {
-            const progRes = await fetch(`${API_BASE}api/progress/${task_id}`);
+            const progRes = await fetch(`${API_BASE}/api/progress/${task_id}`);
             const progData = await progRes.json();
             
             setDownloadProgress(prev => ({ ...prev, [videoId]: progData }));
@@ -111,7 +111,7 @@ function App() {
             if (progData.status === 'completed') {
               clearInterval(interval);
               setDownloadProgress(prev => ({ ...prev, [videoId]: { status: 'completed', progress: '100', speed: '', eta: '', stream_type: '' } }));
-              triggerDownload(`${API_BASE}api/get-file/${task_id}`);
+              triggerDownload(`${API_BASE}/api/get-file/${task_id}`);
               setTimeout(() => {
                 setDownloadProgress(prev => ({ ...prev, [videoId]: null }));
                 setActiveTaskIds(prev => ({ ...prev, [videoId]: null }));
