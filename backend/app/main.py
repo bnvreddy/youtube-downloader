@@ -30,6 +30,7 @@ class DownloadRequest(BaseModel):
     sub_lang: Optional[str] = None
     max_resolution: Optional[int] = 720
     audio_only: Optional[bool] = False
+    audio_format: Optional[str] = "mp3"
 
 def delayed_cleanup(temp_dir: str, delay: int = 30):
     def cleanup():
@@ -80,7 +81,7 @@ async def start_download(request: DownloadRequest):
     def run():
         try:
             temp_dir, filepath, filename = download_video_to_temp(
-                request.url, task_id, request.max_resolution, request.audio_only, request.sub_lang
+                request.url, task_id, request.max_resolution, request.audio_only, request.audio_format,request.sub_lang
             )
             download_tasks[task_id]['filepath'] = filepath
             download_tasks[task_id]['filename'] = filename
