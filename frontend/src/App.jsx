@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://192.168.10.4:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://192.168.1.4:8000";
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function App() {
