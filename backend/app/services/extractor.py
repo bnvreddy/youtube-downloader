@@ -3,14 +3,23 @@ import os
 import tempfile
 import re
 import shutil
+import time
 
-# Global dictionary to store download progress and states
 download_tasks = {}
+BASE_YDL_OPTS = {
+    "quiet": True,
+    "no_warnings": True,
+    "skip_download": True,
+    "cookiefile": "youtube_cookies.txt",
+    "remote_components": ["ejs:github"],
+}
+video_info_cache = {}
+CACHE_TIME = 600
 
 class DownloadCancelled(Exception):
     pass
 
-# Regex to remove terminal color codes
+
 ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 def clean_ytdlp_string(text):
@@ -62,143 +71,135 @@ def progress_hook(d, task_id):
         download_tasks[task_id]['status'] = 'merging'
         download_tasks[task_id]['stream_type'] = ''
 
-def get_video_info(url: str):
-    ydl_opts = {
-        'quiet': True,
-        'extract_flat': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'remote_components': ['ejs:github'],
-        'cookiefile': 'youtube_cookies.txt',
-        'sleep_interval' : 3,
-    }
-    
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+def get_cached_info(url):
+    current_time = time.time()
+
+    if url in video_info_cache:
+        cached = video_info_cache[url]
+
+        if current_time - cached["time"] < CACHE_TIME:
+            return cached["info"]
+
+        # remove expired cache
+        del video_info_cache[url]
+
+    with yt_dlp.YoutubeDL(BASE_YDL_OPTS) as ydl:
         info = ydl.extract_info(url, download=False)
-        videos = []
-        if info and 'entries' in info:
-            for entry in info['entries']:
-                if entry:
-                    videos.append({
-                        "id": entry.get('id'),
-                        "title": entry.get('title', 'Unknown Title'),
-                        "thumbnail": entry.get('thumbnails', [{}])[-1].get('url') if entry.get('thumbnails') else None,
-                        "url": f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    })
-        elif info:
-            videos.append({
-                "id": info.get('id'),
-                "title": info.get('title', 'Unknown Title'),
-                "thumbnail": info.get('thumbnail'),
-                "url": url
-            })
-        return videos
+
+    video_info_cache[url] = {
+        "info": info,
+        "time": current_time
+    }
+
+    return info
+
+def get_video_info(url: str):
+    
+    info = get_cached_info(url)
+    videos = []
+    if info and 'entries' in info:
+        for entry in info['entries']:
+            if entry:
+                videos.append({
+                    "id": entry.get('id'),
+                    "title": entry.get('title', 'Unknown Title'),
+                    "thumbnail": entry.get('thumbnails', [{}])[-1].get('url') if entry.get('thumbnails') else None,
+                    "url": f"https://www.youtube.com/watch?v={entry.get('id')}"
+                })
+    elif info:
+        videos.append({
+            "id": info.get('id'),
+            "title": info.get('title', 'Unknown Title'),
+            "thumbnail": info.get('thumbnail'),
+            "url": url
+        })
+    return videos
 
 def list_available_formats(url: str):
-    """Dynamically fetches all available resolutions and calculates sizes"""
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'remote_components': ['ejs:github'],
-        'cookiefile': 'youtube_cookies.txt',
-        'sleep_interval' : 3,
-    }
+    info = get_cached_info(url)
+    if not info: return []
     
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        if not info: return []
+    duration = info.get('duration') # Video length in seconds
+    formats = []
+    seen_heights = set()
+    
+    # 1. Dynamically extract Video Resolutions
+    for f in info.get('formats', []):
+        height = f.get('height')
+        vcodec = f.get('vcodec', 'none')
         
-        duration = info.get('duration') # Video length in seconds
-        formats = []
-        seen_heights = set()
+        # Only process formats that have video and a valid height
+        if height and vcodec != 'none':
+            # Only take the best format for each resolution (usually the first one yt-dlp lists)
+            if height not in seen_heights:
+                seen_heights.add(height)
+                
+                # Calculate Size (YouTube hides exact sizes for 1080p+)
+                size = f.get('filesize') or f.get('filesize_approx')
+                if not size and duration and f.get('tbr'):
+                    # Estimate size using Bitrate (tbr) and Duration, add 30% for audio + overhead
+                    size = (f['tbr'] * 1000 / 8) * duration * 1.3
+                
+                size_mb = round(size / (1024 * 1024), 1) if size else "Unknown"
+                
+                # Generate nice labels
+                label = f"{height}p"
+                if height >= 2160: label = f"4K ({height}p)"
+                elif height >= 1440: label = f"2K ({height}p)"
+                
+                formats.append({
+                    "id": f"video_{height}",
+                    "label": f"{label} Video + Audio",
+                    "size": f"~{size_mb} MB" if isinstance(size_mb, float) else size_mb,
+                    "max_resolution": height,
+                    "audio_only": False
+                })
+    
+    # Sort formats highest resolution first
+    formats.sort(key=lambda x: x['max_resolution'], reverse=True)
+    
+    # 2. Extract Audio Only
+    best_audio = next((f for f in info.get('formats', []) if f.get('acodec') != 'none' and f.get('vcodec') == 'none' and f.get('abr')), None)
+    if best_audio or duration:
+        size = best_audio.get('filesize') or best_audio.get('filesize_approx') if best_audio else None
+        if not size and duration:
+            # Estimate audio size based on standard 128kbps
+            size = (128000 / 8) * duration 
         
-        # 1. Dynamically extract Video Resolutions
-        for f in info.get('formats', []):
-            height = f.get('height')
-            vcodec = f.get('vcodec', 'none')
-            
-            # Only process formats that have video and a valid height
-            if height and vcodec != 'none':
-                # Only take the best format for each resolution (usually the first one yt-dlp lists)
-                if height not in seen_heights:
-                    seen_heights.add(height)
-                    
-                    # Calculate Size (YouTube hides exact sizes for 1080p+)
-                    size = f.get('filesize') or f.get('filesize_approx')
-                    if not size and duration and f.get('tbr'):
-                        # Estimate size using Bitrate (tbr) and Duration, add 30% for audio + overhead
-                        size = (f['tbr'] * 1000 / 8) * duration * 1.3
-                    
-                    size_mb = round(size / (1024 * 1024), 1) if size else "Unknown"
-                    
-                    # Generate nice labels
-                    label = f"{height}p"
-                    if height >= 2160: label = f"4K ({height}p)"
-                    elif height >= 1440: label = f"2K ({height}p)"
-                    
-                    formats.append({
-                        "id": f"video_{height}",
-                        "label": f"{label} Video + Audio",
-                        "size": f"~{size_mb} MB" if isinstance(size_mb, float) else size_mb,
-                        "max_resolution": height,
-                        "audio_only": False
-                    })
+        size_mb = round(size / (1024 * 1024), 1) if size else "Unknown"
+        formats.append({
+            "id": "audio_only",
+            "label": "Audio Only (MP3)",
+            "size": f"~{size_mb} MB" if isinstance(size_mb, float) else size_mb,
+            "max_resolution": None,
+            "audio_only": True
+        })
         
-        # Sort formats highest resolution first
-        formats.sort(key=lambda x: x['max_resolution'], reverse=True)
-        
-        # 2. Extract Audio Only
-        best_audio = next((f for f in info.get('formats', []) if f.get('acodec') != 'none' and f.get('vcodec') == 'none' and f.get('abr')), None)
-        if best_audio or duration:
-            size = best_audio.get('filesize') or best_audio.get('filesize_approx') if best_audio else None
-            if not size and duration:
-                # Estimate audio size based on standard 128kbps
-                size = (128000 / 8) * duration 
-            
-            size_mb = round(size / (1024 * 1024), 1) if size else "Unknown"
-            formats.append({
-                "id": "audio_only",
-                "label": "Audio Only (MP3)",
-                "size": f"~{size_mb} MB" if isinstance(size_mb, float) else size_mb,
-                "max_resolution": None,
-                "audio_only": True
-            })
-            
-        return formats
+    return formats
 
 
 def list_available_subtitles(url: str):
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'remote_components': ['ejs:github'],
-        'cookiefile': 'youtube_cookies.txt',
-        'sleep_interval' : 3,
-    }
+
+    info = get_cached_info(url)
+    if not info: return []
     
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        if not info: return []
+    subs = []
+    manual_subs = info.get('subtitles', {})
+    auto_subs = info.get('automatic_captions', {})
+    video_lang = info.get('language')
+    
+    for lang_code in manual_subs.keys():
+        subs.append({"code": lang_code, "name": f"{lang_code.upper()} (Manual)", "type": "manual"})
         
-        subs = []
-        manual_subs = info.get('subtitles', {})
-        auto_subs = info.get('automatic_captions', {})
-        video_lang = info.get('language')
-        
-        for lang_code in manual_subs.keys():
-            subs.append({"code": lang_code, "name": f"{lang_code.upper()} (Manual)", "type": "manual"})
-            
-        if auto_subs:
-            if video_lang and video_lang in auto_subs:
-                if video_lang not in manual_subs:
-                    subs.append({"code": video_lang, "name": f"{video_lang.upper()} (Auto)", "type": "auto"})
-            else:
-                first_auto_lang = list(auto_subs.keys())[0]
-                if first_auto_lang not in manual_subs:
-                    subs.append({"code": first_auto_lang, "name": f"{first_auto_lang.upper()} (Auto)", "type": "auto"})
-        return subs
+    if auto_subs:
+        if video_lang and video_lang in auto_subs:
+            if video_lang not in manual_subs:
+                subs.append({"code": video_lang, "name": f"{video_lang.upper()} (Auto)", "type": "auto"})
+        else:
+            first_auto_lang = list(auto_subs.keys())[0]
+            if first_auto_lang not in manual_subs:
+                subs.append({"code": first_auto_lang, "name": f"{first_auto_lang.upper()} (Auto)", "type": "auto"})
+    return subs
 
 def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, audio_only: bool = False, sub_lang: str = None):
     temp_dir = tempfile.mkdtemp()
@@ -252,7 +253,6 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         'retries': 3,
         'fragment_retries': 3,
         'cookiefile': 'youtube_cookies.txt',
-        'sleep_interval' : 3,
     }
     
     if merge_format: 
