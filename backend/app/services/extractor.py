@@ -6,6 +6,8 @@ import shutil
 import time
 import datetime
 from google.cloud import storage
+import google.auth
+from google.auth.transport.requests import Request
 
 # Global dictionary to store download progress and states
 download_tasks = {}
@@ -331,7 +333,7 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         raise e
 
 def upload_to_gcs(local_dir, filename):
-    """Uploads file to GCS and returns a 5-minute Signed URL."""
+    """Uploads file to GCS and returns a 5-minute Signed URL using IAM SignBlob."""
     bucket_name = os.environ.get('GCS_BUCKET_NAME')
     if not bucket_name:
         raise Exception("GCS_BUCKET_NAME environment variable not set.")
@@ -340,14 +342,32 @@ def upload_to_gcs(local_dir, filename):
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(filename)
     
-    # Upload
+    # Upload from local temp disk to GCS
     filepath = os.path.join(local_dir, filename)
     blob.upload_from_filename(filepath)
     
-    # Generate Signed URL (Valid for 5 minutes)
+    # --- CLOUD RUN SIGNED URL FIX ---
+    # Get the current application default credentials and force refresh the token
+    credentials, project = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    if not credentials.valid:
+        request = Request()
+        credentials.refresh(request)
+        
+    # Extract the service account email from the credentials
+    service_account_email = credentials.service_account_email
+    if not service_account_email:
+        # Fallback if email isn't in credentials (shouldn't happen on Cloud Run)
+        service_account_email = os.environ.get('GCS_CLIENT_EMAIL')
+        if not service_account_email:
+            raise Exception("Could not determine service account email for signing.")
+
+    # Generate Signed URL using IAM SignBlob API (Valid for 5 minutes)
     signed_url = blob.generate_signed_url(
         version="v4",
         expiration=datetime.timedelta(minutes=5),
-        method="GET"
+        method="GET",
+        service_account_email=service_account_email,
+        access_token=credentials.token
     )
+    
     return signed_url
