@@ -202,25 +202,23 @@ function App() {
 
               setDownloadProgress((prev) => ({ ...prev, [videoId]: progData }));
 
-              if (progData.status === "completed") {
-                clearInterval(interval);
-                setDownloadProgress((prev) => ({
-                  ...prev,
-                  [videoId]: {
-                    status: "completed",
-                    progress: "100",
-                    speed: "",
-                    eta: "",
-                    stream_type: "",
-                  },
-                }));
-                triggerDownload(`${API_BASE}/api/get-file/${task_id}`);
-                setTimeout(() => {
-                  setDownloadProgress((prev) => ({ ...prev, [videoId]: null }));
-                  setActiveTaskIds((prev) => ({ ...prev, [videoId]: null }));
-                  resolve();
-                }, 2500);
-              } else if (progData.status === "cancelled") {
+                          if (progData.status === 'completed') {
+              clearInterval(interval);
+              setDownloadProgress(prev => ({ ...prev, [videoId]: { status: 'completed', progress: '100', speed: '', eta: '', stream_type: '' } }));
+              
+              // NEW: Redirect browser directly to the Google Cloud Storage Signed URL!
+              if (progData.gcs_url) {
+                triggerDownload(progData.gcs_url);
+              } else {
+                alert("Error: Download URL not generated.");
+              }
+
+              setTimeout(() => {
+                setDownloadProgress(prev => ({ ...prev, [videoId]: null }));
+                setActiveTaskIds(prev => ({ ...prev, [videoId]: null }));
+                resolve();
+              }, 2500);
+              }else if (progData.status === "cancelled") {
                 clearInterval(interval);
                 setDownloadProgress((prev) => ({
                   ...prev,

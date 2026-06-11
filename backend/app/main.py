@@ -6,7 +6,6 @@ import uuid
 from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from app.services.extractor import DownloadCancelled, get_video_info, download_video_to_temp, list_available_subtitles, list_available_formats, download_tasks
 from pydantic import BaseModel
 
@@ -64,6 +63,8 @@ async def fetch_formats(request: InfoRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# ... (imports)
+
 @app.post("/api/start-download")
 async def start_download(request: DownloadRequest):
     task_id = str(uuid.uuid4())
@@ -72,26 +73,23 @@ async def start_download(request: DownloadRequest):
         "progress": "0",
         "speed": "",
         "eta": "",
-        "filepath": None,
-        "filename": None,
-        "temp_dir": None,
+        "gcs_url": None, # NEW: Holds the Cloud Storage link
         "stream_type": ""
     }
     
     def run():
         try:
-            temp_dir, filepath, filename = download_video_to_temp(
-                request.url, task_id, request.max_resolution, request.audio_only, request.audio_format,request.sub_lang
+            # Now returns temp_dir, filename, gcs_url
+            temp_dir, filename, gcs_url = download_video_to_temp(
+                request.url, task_id, request.max_resolution, request.audio_only, request.audio_format, request.sub_lang
             )
-            download_tasks[task_id]['filepath'] = filepath
             download_tasks[task_id]['filename'] = filename
-            download_tasks[task_id]['temp_dir'] = temp_dir
+            download_tasks[task_id]['gcs_url'] = gcs_url
             download_tasks[task_id]['status'] = 'completed'
-        except DownloadCancelled:
-            temp_dir = download_tasks[task_id].get('temp_dir')
-            if temp_dir and os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            download_tasks[task_id]['status'] = 'cancelled'
+            
+            # Cleanup local temp disk immediately after upload finishes
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            
         except Exception as e:
             download_tasks[task_id]['status'] = f'error: {str(e)}'
 
@@ -99,6 +97,7 @@ async def start_download(request: DownloadRequest):
     thread.start()
     
     return {"task_id": task_id}
+
 
 @app.post("/api/cancel-download/{task_id}")
 async def cancel_download(task_id: str):
@@ -113,16 +112,3 @@ async def get_progress(task_id: str):
         return download_tasks[task_id]
     return {"status": "not_found"}
 
-@app.get("/api/get-file/{task_id}")
-async def get_file(task_id: str):
-    if task_id not in download_tasks or download_tasks[task_id]['status'] != 'completed':
-        raise HTTPException(status_code=404, detail="File not ready")
-    
-    task = download_tasks[task_id]
-    delayed_cleanup(task['temp_dir'], delay=30)
-    
-    return FileResponse(
-        path=task['filepath'], 
-        filename=task['filename'], 
-        media_type='application/octet-stream'
-    )

@@ -4,6 +4,8 @@ import tempfile
 import re
 import shutil
 import time
+import datetime
+from google.cloud import storage
 
 # Global dictionary to store download progress and states
 download_tasks = {}
@@ -245,11 +247,12 @@ def list_available_subtitles(url: str):
             
     return subs
 
+
 def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, audio_only: bool = False, audio_format: str = 'mp3', sub_lang: str = None):
     temp_dir = tempfile.mkdtemp()
     
     try:
-        # Define filename suffix based on format
+        # Define filename suffix
         suffix = ""
         if audio_only:
             suffix = f"({audio_format.upper()})"
@@ -261,17 +264,11 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
         if audio_only:
             if audio_format == 'mp3':
                 format_selector = 'bestaudio/best'
-                postprocessors = [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }]
+                postprocessors = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
             elif audio_format == 'm4a':
-                # Native M4A/AAC (no conversion needed, much faster)
                 format_selector = 'bestaudio[ext=m4a]/bestaudio/best'
                 postprocessors = []
             elif audio_format == 'webm':
-                # Native Webm/Opus (no conversion needed, highest bitrate)
                 format_selector = 'bestaudio[ext=webm]/bestaudio/best'
                 postprocessors = []
             else:
@@ -282,11 +279,7 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
             out_ext = f'.{audio_format}'
         else:
             if max_resolution > 1080:
-                format_selector = (
-                    f'bestvideo[height<={max_resolution}][vcodec^=vp9]+bestaudio/'
-                    f'bestvideo[height<={max_resolution}]+bestaudio/'
-                    f'best[height<={max_resolution}]'
-                )
+                format_selector = (f'bestvideo[height<={max_resolution}][vcodec^=vp9]+bestaudio/bestvideo[height<={max_resolution}]+bestaudio/best[height<={max_resolution}]')
                 merge_format = 'mkv'
                 out_ext = '.mkv'
             else:
@@ -295,12 +288,8 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
                 out_ext = '.mp4'
                 
             postprocessors = []
-            
             if sub_lang:
-                postprocessors.extend([
-                    {'key': 'FFmpegSubtitlesConvertor', 'format': 'srt'},
-                    {'key': 'FFmpegEmbedSubtitle'},
-                ])
+                postprocessors.extend([{'key': 'FFmpegSubtitlesConvertor', 'format': 'srt'}, {'key': 'FFmpegEmbedSubtitle'}])
 
         ydl_opts = _get_base_opts()
         ydl_opts.update({
@@ -313,15 +302,14 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
             'ignoreerrors': True,
         })
         
-        if merge_format: 
-            ydl_opts['merge_output_format'] = merge_format
-        if postprocessors: 
-            ydl_opts['postprocessors'] = postprocessors
+        if merge_format: ydl_opts['merge_output_format'] = merge_format
+        if postprocessors: ydl_opts['postprocessors'] = postprocessors
         if sub_lang and not audio_only:
             ydl_opts['writesubtitles'] = True
             ydl_opts['writeautomaticsub'] = True
             ydl_opts['subtitleslangs'] = [sub_lang]
 
+        # 1. Download to local container temp disk
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             if info is None: raise Exception("Failed to extract video.")
@@ -331,8 +319,35 @@ def download_video_to_temp(url: str, task_id: str, max_resolution: int = 720, au
                 filename = filename.rsplit('.', 1)[0] + out_ext
                 
         actual_filename = os.path.basename(filename)
-        return temp_dir, filename, actual_filename
+        
+        # 2. Upload to Google Cloud Storage & Generate Signed URL
+        gcs_url = upload_to_gcs(temp_dir, actual_filename)
+        
+        # Return the GCS URL instead of the local path!
+        return temp_dir, actual_filename, gcs_url
         
     except Exception as e:
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise e
+
+def upload_to_gcs(local_dir, filename):
+    """Uploads file to GCS and returns a 5-minute Signed URL."""
+    bucket_name = os.environ.get('GCS_BUCKET_NAME')
+    if not bucket_name:
+        raise Exception("GCS_BUCKET_NAME environment variable not set.")
+        
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    
+    # Upload
+    filepath = os.path.join(local_dir, filename)
+    blob.upload_from_filename(filepath)
+    
+    # Generate Signed URL (Valid for 5 minutes)
+    signed_url = blob.generate_signed_url(
+        version="v4",
+        expiration=datetime.timedelta(minutes=5),
+        method="GET"
+    )
+    return signed_url
