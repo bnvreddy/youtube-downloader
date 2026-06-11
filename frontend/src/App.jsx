@@ -239,7 +239,7 @@ function App() {
               clearInterval(interval);
               reject(err);
             }
-          }, 1000);
+          }, 2000);
         })
         .catch(reject);
     });
