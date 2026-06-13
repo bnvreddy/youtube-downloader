@@ -13,7 +13,7 @@ from google.auth.transport.requests import Request
 download_tasks = {}
 
 # --- LIGHTWEIGHT RAM CACHE ---
-_CACHE_MAX_SIZE = 15 
+_CACHE_MAX_SIZE = 3 
 _CACHE_TTL = 300 
 _info_cache = {} 
 
