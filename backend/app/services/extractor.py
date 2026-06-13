@@ -13,8 +13,8 @@ from google.auth.transport.requests import Request
 download_tasks = {}
 
 # --- LIGHTWEIGHT RAM CACHE ---
-_CACHE_MAX_SIZE = 3 
-_CACHE_TTL = 300 
+_CACHE_MAX_SIZE = 1 
+_CACHE_TTL = 200 
 _info_cache = {} 
 
 class DownloadCancelled(Exception):
